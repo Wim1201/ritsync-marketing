@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>RitSync — tekenfilm v5</title>
+<title>RitSync — tekenfilm v6</title>
 <style>
 /* ============================================================
-   RitSync tekenfilm v5 — ca. 58 seconden
+   RitSync tekenfilm v6 — ca. 93 seconden, met stem en muziek
 
    Correcties t.o.v. de proefversie:
    - Privé-kilometers worden NIET geregistreerd (was een foute
@@ -16,6 +16,16 @@
    - Plaatsnamen gelijkgetrokken met de landingspagina
    - Kilometers consistent: dag 141,8 km / maand 1.284,6 km
    - Tarief 2026: EUR 0,25 per kilometer
+
+   Nieuw in v6:
+   - Gesproken opening (26 s) en afsluiting (30 s), ingesproken door Wim
+     (assets/stem-opening.mp3 en assets/stem-slot.mp3)
+   - Muziek: assets/road-trip-music-sonican.mp3 — zacht onder de stem,
+     dragend in het middendeel (regel je met musicTo() in de cues)
+   - Startknop in plaats van autoplay: browsers blokkeren automatisch
+     afspelen mét geluid
+   - Tijdens de stem toont de oranje overlay de gesproken tekst;
+     in het middendeel vertellen de ondertitels zoals in v5
 
    Scènes: 1 Mark · 2 agenda's · 3 dagketen · 4 classificatie
            5 overnachting · 6 twijfel · 7 rapport · eind
@@ -33,7 +43,7 @@ body{min-height:100vh;display:grid;place-items:center;padding:14px}
 .stage{position:relative;aspect-ratio:9/16;overflow:hidden;border-radius:24px;background:linear-gradient(#dff4ff 0 62%,#d8efd1 62%);box-shadow:0 20px 60px #0008}
 svg{width:100%;height:100%;display:block}
 .scene{opacity:0;pointer-events:none;transition:opacity .45s ease}
-.scene.on{opacity:1}
+.scene.on{opacity:1;pointer-events:auto}  /* zichtbaar én klikbaar (registratieknop!) */
 .pop{opacity:0;transform-box:fill-box;transform-origin:center;transform:scale(.6);transition:.42s cubic-bezier(.2,.85,.25,1.2)}
 .pop.on{opacity:1;transform:scale(1)}
 .rise{opacity:0;transform:translateY(20px);transition:.48s ease}
@@ -89,6 +99,17 @@ svg{width:100%;height:100%;display:block}
 .track{height:4px;flex:1;background:#ffffff33;border-radius:9px;overflow:hidden}
 .track i{display:block;height:100%;width:0;background:var(--orange)}
 button{border:0;border-radius:999px;background:var(--orange);color:#09243a;font-weight:800;padding:9px 15px;cursor:pointer}
+
+/* ---- startscherm (browsers blokkeren autoplay met geluid) ---- */
+.startover{
+  position:absolute;inset:0;z-index:5;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  background:rgba(0,25,42,.55);backdrop-filter:blur(2px);
+  transition:opacity .35s ease;
+}
+.startover.hidden{opacity:0;pointer-events:none}
+.startover button{font-size:16px;padding:14px 28px;box-shadow:0 14px 34px rgba(0,0,0,.4)}
+.startover span{font-size:12.5px;font-weight:600;color:#cfe3f2}
 .caption{display:none}
 @media (prefers-reduced-motion:reduce){
   .pop,.rise,.slide,.badge{transition:opacity .15s linear;transform:none!important}
@@ -357,8 +378,15 @@ button{border:0;border-radius:999px;background:var(--orange);color:#09243a;font-
 </g>
 </svg>
 <div class="lower" id="caption"><span></span></div>
+<div class="startover" id="startOverlay">
+  <button id="startBtn" type="button">▶&nbsp;&nbsp;Speel af met geluid</button>
+  <span>1½ minuut · met stem en muziek</span>
+</div>
 </div>
 <div class="controls"><button id="replay">Opnieuw</button><div class="track"><i id="prog"></i></div></div>
+<audio id="voiceOpen" src="assets/stem-opening.mp3" preload="auto"></audio>
+<audio id="voiceSlot" src="assets/stem-slot.mp3" preload="auto"></audio>
+<audio id="musicTrack" src="assets/road-trip-music-sonican.mp3" preload="auto"></audio>
 </div>
 <script>
 (()=>{
@@ -369,6 +397,22 @@ button{border:0;border-radius:999px;background:var(--orange);color:#09243a;font-
 
  // Kilometertarief 2026: EUR 0,25 (verhoogd van 0,23, terugwerkend tot 01-01-2026)
  const DAGTOTAAL=141.8;
+
+ // ---- audio ----
+ const music=q('#musicTrack'), vOpen=q('#voiceOpen'), vSlot=q('#voiceSlot');
+ const overlay=q('#startOverlay'), startBtn=q('#startBtn');
+ let musicRaf=null;
+
+ // Regelt het muziekvolume geleidelijk naar een doelwaarde (0..1).
+ function musicTo(target,ms){
+   if(musicRaf)cancelAnimationFrame(musicRaf);
+   const from=music.volume, st=performance.now();
+   (function step(now){
+     const p=Math.min((now-st)/ms,1);
+     music.volume=Math.max(0,Math.min(1,from+(target-from)*p));
+     if(p<1) musicRaf=requestAnimationFrame(step);
+   })(st);
+ }
 
  function show(sel){qa(sel).forEach(n=>n.classList.add('on'))}
  function hide(sel){qa(sel).forEach(n=>n.classList.remove('on'))}
@@ -402,65 +446,74 @@ button{border:0;border-radius:999px;background:var(--orange);color:#09243a;font-
  }
 
  const cues=[
-  /* 1 · Mark */
-  {t:0,on:'#s1,#mark',sub:'Dit is Mark. Zelfstandig, veel onderweg, en nog nooit een rittenstaat afgemaakt.'},
-  {t:800,on:'#coffee'},
-  {t:1300,on:'#phone'},
-  {t:2400,on:'#bubble1',sub:'Zijn agenda staat al vol met afspraken en locaties.'},
+  /* ── OPENING · stem Wim (26,0 s) over scène 1 en 2 ──
+     De oranje overlay toont de gesproken tekst. */
+  {t:0,on:'#s1,#mark',
+     run:()=>{vOpen.play();music.volume=0;music.play();musicTo(.12,2500)},
+     sub:'RitSync is ontstaan uit ergernis.'},
+  {t:1500,on:'#coffee'},
+  {t:3300,sub:'Een kastje in de auto vroeg te veel handelingen en ik vergat het nogal eens aan en uit te zetten.'},
+  {t:3800,on:'#phone'},
+  {t:6800,on:'#bubble1'},
+  {t:12600,sub:'En dat Excel-bestand invullen? Daar was ik elk kwartaal uren mee kwijt.'},
+  {t:14000,off:'#s1',on:'#s2'},
+  {t:14600,on:'#cal1'}, {t:15000,on:'#cal2'}, {t:15400,on:'#cal3'},
+  {t:18400,sub:'Dus hebben we gezocht naar een praktische en simpele oplossing en zijn we het zelf gaan bouwen.'},
+  {t:24300,on:'#rsHub'},        /* logo landt op "zelf gaan bouwen" */
+  {t:25400,on:'#spark2'},
 
-  /* 2 · agenda's */
-  {t:5200,off:'#s1',on:'#s2',sub:'RitSync brengt zijn agenda’s automatisch samen.'},
-  {t:5700,on:'#cal1'}, {t:6100,on:'#cal2'}, {t:6500,on:'#cal3'},
-  {t:7600,on:'#rsHub'}, {t:8500,on:'#spark2',sub:'De afspraken worden het vertrekpunt voor zijn ritten.'},
-
-  /* 3 · dagketen, met kantoorbezoek tussendoor */
-  {t:10500,off:'#s2',on:'#s3',sub:'Van huis naar kantoor, klanten, notaris en weer terug.'},
-  {t:11000,on:'#pHome,#pOffice,#pRotterdam,#pAmsterdam,#pUtrecht,#counter'},
-  {t:11900,run:()=>drive('#route','#car',reduced?700:8200,true),
+  /* ── MIDDENDEEL · muziek dragend, ondertitels vertellen ── */
+  {t:26500,off:'#s2',on:'#s3',run:()=>musicTo(.38,1800),
+           sub:'Van huis naar kantoor, klanten, notaris en weer terug.'},
+  {t:27000,on:'#pHome,#pOffice,#pRotterdam,#pAmsterdam,#pUtrecht,#counter'},
+  {t:27900,run:()=>drive('#route','#car',reduced?700:8200,true),
            sub:'RitSync bouwt er één logische dagketen van en telt de kilometers.'},
-  {t:13800,on:'#kantoorBadge',sub:'Om half een moet Mark nog even een dossier ophalen op kantoor.'},
-  {t:15300,sub:'Die tussenstop wordt een schakel in de keten. Geen losse rit die je later niet meer kunt verantwoorden.',emph:true},
-  {t:17400,on:'#pTandarts',sub:'En de tandarts probeert nog even mee te liften.'},
-  {t:18600,on:'#tandKruis'},
-  {t:19300,run:()=>q('#pTandarts').classList.add('kicked'),
+  {t:29800,on:'#kantoorBadge',sub:'Om half een moet Mark nog even een dossier ophalen op kantoor.'},
+  {t:31300,sub:'Die tussenstop wordt een schakel in de keten. Geen losse rit die je later niet meer kunt verantwoorden.',emph:true},
+  {t:33400,on:'#pTandarts',sub:'En de tandarts probeert nog even mee te liften.'},
+  {t:34600,on:'#tandKruis'},
+  {t:35300,run:()=>q('#pTandarts').classList.add('kicked'),
            sub:'Maar privé blijft privé. Die kilometers worden niet eens berekend.',emph:true},
-  {t:21000,sub:'Woon-werk gaat apart: zakelijk voor de inkomstenbelasting, privé voor de btw.'},
+  {t:37000,sub:'Woon-werk gaat apart: zakelijk voor de inkomstenbelasting, privé voor de btw.'},
 
-  /* 4 · classificatie */
-  {t:23200,off:'#s3',on:'#s4',sub:'Zakelijk, intern, woon-werk of privé — RitSync deelt het zelf in.'},
-  {t:23900,on:'#b1'}, {t:24350,on:'#b2'}, {t:24800,on:'#b3'},
-  {t:25250,on:'#b4'}, {t:25700,on:'#b5'}, {t:26150,on:'#b6'},
-  {t:26800,on:'#mark4',sub:'Mark hoeft niet één rit meer uit te zoeken.'},
-  {t:28200,sub:'En de tandarts? Die doet twee keer pijn: die kilometers zijn óók niet aftrekbaar.',emph:true},
+  {t:39200,off:'#s3',on:'#s4',sub:'Zakelijk, intern, woon-werk of privé — RitSync deelt het zelf in.'},
+  {t:39900,on:'#b1'}, {t:40350,on:'#b2'}, {t:40800,on:'#b3'},
+  {t:41250,on:'#b4'}, {t:41700,on:'#b5'}, {t:42150,on:'#b6'},
+  {t:42800,on:'#mark4',sub:'Mark hoeft niet één rit meer uit te zoeken.'},
+  {t:44200,sub:'En de tandarts? Die doet twee keer pijn: die kilometers zijn óók niet aftrekbaar.',emph:true},
 
-  /* 5 · overnachting */
-  {t:30400,off:'#s4',on:'#s5',sub:'Woensdag rijdt Mark door naar Maastricht.'},
-  {t:31000,on:'#p5home,#p5klant'},
-  {t:31500,run:()=>drive('#route5','#car5',reduced?500:3200,false)},
-  {t:34000,on:'#p5hotel',sub:'En hij rijdt niet terug.'},
-  {t:35100,on:'#hotelScene,#sleepCar,#zz',sub:'De auto blijft staan. De dagketen sluit vandaag niet.'},
-  {t:36800,on:'#p5keulen',run:()=>draw('#route5b',reduced?300:2000),
+  {t:46400,off:'#s4',on:'#s5',sub:'Woensdag rijdt Mark door naar Maastricht.'},
+  {t:47000,on:'#p5home,#p5klant'},
+  {t:47500,run:()=>drive('#route5','#car5',reduced?500:3200,false)},
+  {t:50000,on:'#p5hotel',sub:'En hij rijdt niet terug.'},
+  {t:51100,on:'#hotelScene,#sleepCar,#zz',sub:'De auto blijft staan. De dagketen sluit vandaag niet.'},
+  {t:52800,on:'#p5keulen',run:()=>draw('#route5b',reduced?300:2000),
            sub:'Donderdag tien uur in Keulen. Daarna pas naar huis.',emph:true},
-  {t:38600,sub:'De rit begint bij het hotel, niet bij zijn voordeur. Precies zoals het klopt.',emph:true},
+  {t:54600,sub:'De rit begint bij het hotel, niet bij zijn voordeur. Precies zoals het klopt.',emph:true},
 
-  /* 6 · twijfel */
-  {t:40800,off:'#s5',on:'#s6',sub:'En als iets écht niet duidelijk is, vraagt RitSync het gewoon.'},
-  {t:41500,on:'#question'}, {t:42700,on:'#finger'},
-  {t:43700,on:'#check5',run:()=>{q('#learnText').style.opacity='1'},
-           sub:'Één tik. En de volgende keer weet RitSync het zelf.'},
+  /* ── SLOT · stem Wim (30,3 s), muziek zachter ──
+     De stem start bij de twijfelscène; de overlay volgt de gesproken tekst. */
+  {t:56800,off:'#s5',on:'#s6',run:()=>{musicTo(.12,1200);vSlot.play()},
+           sub:'Nu willen we weten of alles klopt en hoe jouw ervaringen zijn.'},
+  {t:57500,on:'#question'}, {t:58700,on:'#finger'},
+  {t:59700,on:'#check5',run:()=>{q('#learnText').style.opacity='1'}},
+  {t:61800,off:'#s6',on:'#s7'},
+  {t:62500,on:'#laptop'},
+  {t:62800,sub:'Test het een maand. Echt gebruiken. En vertel ons vooral wat er niet deugt.',emph:true},
+  {t:64200,on:'#privRow'},
+  {t:66300,on:'#pdf'}, {t:66800,on:'#excel'}, {t:67300,on:'#csv'},
+  {t:68700,on:'#mark7'},
+  {t:69500,sub:'We willen dat RitSync de betrouwbaarste en makkelijkste kilometeradministratie van Nederland wordt.'},
+  {t:70700,off:'#s7',on:'#end'},
+  {t:71200,on:'#endInner'},
+  {t:76500,sub:'Daar hebben we jou hard bij nodig.',emph:true},
+  {t:80500,sub:'Als tegenprestatie krijg je straks meer declarabele uren. Hartstikke bedankt!'},
 
-  /* 7 · rapport */
-  {t:45800,off:'#s6',on:'#s7',sub:'Aan het eind van de maand staat alles klaar.'},
-  {t:46500,on:'#laptop'},
-  {t:48000,on:'#privRow',sub:'Privé? Niet geregistreerd. RitSync weet niet waar je zaterdag was — en dat houden we graag zo.',emph:true},
-  {t:50300,on:'#pdf'}, {t:50800,on:'#excel'}, {t:51300,on:'#csv',
-           sub:'PDF voor de accountant, Excel voor jezelf, CSV voor de rest.'},
-  {t:52700,on:'#mark7',sub:'Overzichtelijk, controleerbaar en klaar voor de aangifte.'},
-
-  /* eind */
-  {t:54700,off:'#s7',on:'#end',sub:''},{t:55200,on:'#endInner'}
+  /* uitloop: stem klaar (±87 s), muziek even terug en dan uitfaden */
+  {t:87200,sub:'',run:()=>musicTo(.22,1500)},
+  {t:90000,run:()=>musicTo(0,2600)}
  ];
- const DUR=58000;
+ const DUR=93000;
 
  function reset(){
    qa('.scene,.pop,.rise,.slide,.badge,.spark,.zz').forEach(n=>n.classList.remove('on','kicked'));
@@ -469,6 +522,10 @@ button{border:0;border-radius:999px;background:var(--orange);color:#09243a;font-
    q('#km').textContent='0,0 km';
    const r5b=q('#route5b'); r5b.style.strokeDashoffset=r5b.getTotalLength();
    q('#learnText').style.opacity='0';capText.textContent='';cap.classList.remove('punch');prog.style.width='0';cursor=0;
+   // audio terug naar het begin
+   if(musicRaf)cancelAnimationFrame(musicRaf);
+   [music,vOpen,vSlot].forEach(a=>{a.pause();a.currentTime=0});
+   music.volume=0;
  }
  function apply(c){if(c.off)hide(c.off);if(c.on)show(c.on);if(c.sub!==undefined)say(c.sub,c.emph);if(c.run)c.run()}
  function tick(now){
@@ -478,7 +535,10 @@ button{border:0;border-radius:999px;background:var(--orange);color:#09243a;font-
    if(elapsed<DUR) raf=requestAnimationFrame(tick);
  }
  function play(){if(raf)cancelAnimationFrame(raf);reset();t0=performance.now();raf=requestAnimationFrame(tick)}
- replay.addEventListener('click',play); play();
+ // Geen autoplay: de startknop is het klikmoment dat browsers eisen
+ // voordat er geluid mag klinken.
+ startBtn.addEventListener('click',()=>{overlay.classList.add('hidden');play()});
+ replay.addEventListener('click',play);
 })();
 </script>
 </body>
