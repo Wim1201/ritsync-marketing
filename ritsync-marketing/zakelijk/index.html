@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RitSync — animatie v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   RitSync — animatie v3  (ca. 54 seconden)
+
+   Bedoeld als vervanger van de hero-mockup op de landingspagina.
+   Plaatsnamen, tagline en dagketen volgen claude_ritsync-landingspagina.html.
+
+     SC1  agenda + classificatie
+     SC2  dagketen dinsdag: kantoor-anker en woon-werk
+     SC3  overnachting Maastricht -> Keulen: de keten die doorloopt
+     SC4  twijfelcontrole
+     SC5  export PDF / Excel / CSV
+     END  eindkaart met uitnodiging
+
+   Kilometertarief 2026: EUR 0,25 (verhoogd van 0,23, terugwerkend
+   tot 01-01-2026). Zie TARIEF in het script.
+   Alle timing staat in de CUES-array onderaan.
+   ============================================================ */
+
+:root{
+  --navy-900:#002F50;
+  --navy-600:#013A63;
+  --orange:#FF8B00;
+  --paper:#FFFFFF;
+  --paper-mute:#F1F5F9;
+  --steel:#B9C4D1;
+  --font-ui:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:#001B2E;font-family:var(--font-ui);color:#fff;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:100dvh;padding:16px;
+}
+.player{width:100%;max-width:390px}
+.stage{
+  position:relative;width:100%;aspect-ratio:390/700;
+  border-radius:18px;overflow:hidden;background:var(--navy-900);
+  box-shadow:0 18px 50px rgba(0,0,0,.45);
+}
+.stage svg{display:block;width:100%;height:100%}
+
+.subtitle{
+  position:absolute;left:0;right:0;bottom:0;padding:14px 18px 18px;
+  background:linear-gradient(to top,rgba(0,20,35,.94),rgba(0,20,35,0));
+  font-size:14px;line-height:1.35;font-weight:500;text-align:center;
+  min-height:74px;display:flex;align-items:flex-end;justify-content:center;
+}
+.subtitle span{transition:opacity .22s ease}
+.subtitle.swap span{opacity:0}
+
+.bar{display:flex;align-items:center;gap:12px;margin-top:12px}
+.track{flex:1;height:3px;background:rgba(255,255,255,.18);border-radius:3px;overflow:hidden}
+.track i{display:block;height:100%;width:0;background:var(--orange)}
+button{
+  font-family:var(--font-ui);font-size:13px;font-weight:600;color:var(--navy-900);
+  background:var(--orange);border:0;border-radius:999px;padding:9px 18px;cursor:pointer;
+}
+button:focus-visible{outline:3px solid #fff;outline-offset:2px}
+
+/* Buitenste <g> houdt de positie in een transform-ATTRIBUUT,
+   binnenste <g> wordt door CSS bewogen. Nooit beide op één node. */
+.anim{
+  opacity:0;
+  transition:opacity .42s ease, transform .5s cubic-bezier(.2,.8,.3,1);
+  transform-box:fill-box;transform-origin:center;
+}
+.anim.on{opacity:1;transform:none}
+.slide-in{transform:translateX(24px)}
+.pop{transform:scale(.55)}
+.rise{transform:translateY(16px)}
+.drop{transform:translateY(-14px)}
+.ejected{
+  opacity:0!important;transform:translateY(80px) rotate(14deg)!important;
+  transition:opacity .55s ease,transform .55s cubic-bezier(.5,-.4,.7,1);
+}
+.car{opacity:0;transition:opacity .3s ease}
+.car.on{opacity:1}
+
+@media (prefers-reduced-motion:reduce){
+  .anim{transition:opacity .18s linear}
+  .anim,.slide-in,.pop,.rise,.drop{transform:none}
+}
+</style>
+</head>
+<body>
+
+<div class="player">
+  <div class="stage">
+    <svg id="film" viewBox="0 0 390 700" role="img"
+         aria-label="Animatie: RitSync maakt van je agenda een sluitende kilometeradministratie">
+      <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#002F50"/><stop offset="100%" stop-color="#0A4A7A"/>
+        </linearGradient>
+        <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+          <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000" flood-opacity=".28"/>
+        </filter>
+      </defs>
+
+      <rect width="390" height="700" fill="url(#bg)"/>
+
+      <g id="mark" class="anim">
+        <text x="24" y="42" font-size="15" font-weight="800" fill="#fff" letter-spacing=".4">Rit<tspan fill="#FF8B00">Sync</tspan></text>
+      </g>
+
+      <!-- ══════════ SC1 · AGENDA ══════════ -->
+      <g id="sc1" class="anim">
+        <g id="sc1chrome" class="anim rise">
+          <rect x="42" y="70" width="306" height="500" rx="26" fill="var(--paper)" filter="url(#soft)"/>
+          <text x="66" y="108" font-size="15" font-weight="700" fill="#002F50">Dinsdag 15 september</text>
+          <text x="324" y="108" font-size="11" font-weight="600" fill="#64748B" text-anchor="end">Agenda</text>
+          <line x1="66" y1="122" x2="324" y2="122" stroke="#E6EBF1" stroke-width="1.5"/>
+        </g>
+
+        <g transform="translate(0,132)"><g id="ap1" class="anim slide-in">
+          <rect x="64" y="0" width="262" height="52" rx="11" fill="var(--paper-mute)"/>
+          <text x="80" y="21" font-family="var(--font-mono)" font-size="10.5" fill="#64748B">08:00</text>
+          <text x="80" y="39" font-size="13" font-weight="700" fill="#002F50">Kantoor</text>
+          <g id="tg1" class="anim pop">
+            <rect x="242" y="9" width="72" height="18" rx="9" fill="#DCFCE7"/>
+            <text x="278" y="22" font-size="8.5" font-weight="700" fill="#166534" text-anchor="middle" letter-spacing=".4">WOON-WERK</text>
+          </g>
+        </g></g>
+
+        <g transform="translate(0,190)"><g id="ap2" class="anim slide-in">
+          <rect x="64" y="0" width="262" height="52" rx="11" fill="var(--paper-mute)"/>
+          <text x="80" y="21" font-family="var(--font-mono)" font-size="10.5" fill="#64748B">09:30</text>
+          <text x="80" y="39" font-size="13" font-weight="700" fill="#002F50">Accountmanager · Amsterdam</text>
+          <g id="tg2" class="anim pop">
+            <rect x="248" y="9" width="66" height="18" rx="9" fill="#DCFCE7"/>
+            <text x="281" y="22" font-size="8.5" font-weight="700" fill="#166534" text-anchor="middle" letter-spacing=".4">ZAKELIJK</text>
+          </g>
+        </g></g>
+
+        <g transform="translate(0,248)"><g id="ap3" class="anim slide-in">
+          <rect x="64" y="0" width="262" height="52" rx="11" fill="var(--paper-mute)"/>
+          <text x="80" y="21" font-family="var(--font-mono)" font-size="10.5" fill="#64748B">12:15</text>
+          <text x="80" y="39" font-size="13" font-weight="700" fill="#002F50">Dossier ophalen · kantoor</text>
+          <g id="tg3" class="anim pop">
+            <rect x="252" y="9" width="62" height="18" rx="9" fill="#DBEAFE"/>
+            <text x="283" y="22" font-size="8.5" font-weight="700" fill="#1E40AF" text-anchor="middle" letter-spacing=".4">INTERN</text>
+          </g>
+        </g></g>
+
+        <g transform="translate(0,306)"><g id="ap4" class="anim slide-in">
+          <rect x="64" y="0" width="262" height="52" rx="11" fill="var(--paper-mute)"/>
+          <text x="80" y="21" font-family="var(--font-mono)" font-size="10.5" fill="#64748B">14:00</text>
+          <text x="80" y="39" font-size="13" font-weight="700" fill="#002F50">Klantgesprek · Rotterdam</text>
+          <g id="tg4" class="anim pop">
+            <rect x="248" y="9" width="66" height="18" rx="9" fill="#DCFCE7"/>
+            <text x="281" y="22" font-size="8.5" font-weight="700" fill="#166534" text-anchor="middle" letter-spacing=".4">ZAKELIJK</text>
+          </g>
+        </g></g>
+
+        <g transform="translate(0,364)"><g id="ap5" class="anim slide-in">
+          <rect x="64" y="0" width="262" height="52" rx="11" fill="var(--paper-mute)"/>
+          <text x="80" y="21" font-family="var(--font-mono)" font-size="10.5" fill="#64748B">16:00</text>
+          <text x="80" y="39" font-size="13" font-weight="700" fill="#002F50">Sales pitch · Utrecht</text>
+          <g id="tg5" class="anim pop">
+            <rect x="248" y="9" width="66" height="18" rx="9" fill="#DCFCE7"/>
+            <text x="281" y="22" font-size="8.5" font-weight="700" fill="#166534" text-anchor="middle" letter-spacing=".4">ZAKELIJK</text>
+          </g>
+        </g></g>
+
+        <g transform="translate(0,422)"><g id="ap6" class="anim slide-in">
+          <rect x="64" y="0" width="262" height="52" rx="11" fill="var(--paper-mute)"/>
+          <text x="80" y="21" font-family="var(--font-mono)" font-size="10.5" fill="#64748B">17:45</text>
+          <text x="80" y="39" font-size="13" font-weight="700" fill="#002F50">Tandarts</text>
+          <g id="tg6" class="anim pop">
+            <rect x="258" y="9" width="56" height="18" rx="9" fill="#FFE4E6"/>
+            <text x="286" y="22" font-size="8.5" font-weight="700" fill="#9F1239" text-anchor="middle" letter-spacing=".4">PRIVÉ</text>
+          </g>
+        </g></g>
+
+        <g id="engine" class="anim rise">
+          <rect x="64" y="488" width="262" height="52" rx="11" fill="#002F50"/>
+          <text x="195" y="510" font-size="10.5" font-weight="700" fill="#FF8B00" text-anchor="middle" letter-spacing=".5">203 HERKENNINGSREGELS + AI</text>
+          <text x="195" y="527" font-size="10.5" font-weight="500" fill="#B9C4D1" text-anchor="middle">zakelijk · intern · woon-werk · privé</text>
+        </g>
+      </g>
+
+      <!-- ══════════ SC2 · DAGKETEN DINSDAG ══════════ -->
+      <g id="sc2" class="anim">
+        <rect x="20" y="76" width="350" height="496" rx="22" fill="var(--navy-600)"/>
+        <g stroke="#fff" stroke-opacity=".07" stroke-width="1.5">
+          <line x1="20" y1="200" x2="370" y2="200"/><line x1="20" y1="320" x2="370" y2="320"/>
+          <line x1="20" y1="440" x2="370" y2="440"/><line x1="140" y1="76" x2="140" y2="572"/>
+          <line x1="250" y1="76" x2="250" y2="572"/>
+        </g>
+        <text x="40" y="102" font-size="10.5" font-weight="700" fill="#B9C4D1" letter-spacing=".6">DAGKETEN · DINSDAG 15-09</text>
+
+        <path id="route1" d="M272 452 L238 372 L168 150 Q108 258 238 372 L92 322 L252 300 L272 452"
+              fill="none" stroke="#FF8B00" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+        <g transform="translate(272,452)"><g id="p1home" class="anim pop">
+          <circle r="11" fill="#FF8B00"/><circle r="4" fill="#002F50"/>
+          <text x="-17" y="4" font-size="11" font-weight="700" fill="#fff" text-anchor="end">Thuis</text>
+        </g></g>
+        <g transform="translate(238,372)"><g id="p1office" class="anim pop">
+          <rect x="-8" y="-8" width="16" height="16" rx="3" fill="#fff"/><rect x="-3" y="-3" width="6" height="6" fill="#002F50"/>
+          <text x="-15" y="4" font-size="11" font-weight="600" fill="#fff" text-anchor="end">Kantoor</text>
+        </g></g>
+        <g transform="translate(168,150)"><g id="p1a" class="anim pop">
+          <circle r="8" fill="#fff"/><circle r="3.2" fill="#002F50"/>
+          <text x="15" y="4" font-size="11" font-weight="600" fill="#fff">Amsterdam</text>
+        </g></g>
+        <g transform="translate(92,322)"><g id="p1b" class="anim pop">
+          <circle r="8" fill="#fff"/><circle r="3.2" fill="#002F50"/>
+          <text x="0" y="-15" font-size="11" font-weight="600" fill="#fff" text-anchor="middle">Rotterdam</text>
+        </g></g>
+        <g transform="translate(252,300)"><g id="p1c" class="anim pop">
+          <circle r="8" fill="#fff"/><circle r="3.2" fill="#002F50"/>
+          <text x="15" y="4" font-size="11" font-weight="600" fill="#fff">Utrecht</text>
+        </g></g>
+        <g transform="translate(110,478)"><g id="p1p" class="anim pop">
+          <circle r="8" fill="#FFE4E6"/><circle r="3.2" fill="#9F1239"/>
+          <text x="15" y="4" font-size="11" font-weight="600" fill="#FFB4BE">Tandarts</text>
+          <g id="stamp" class="anim pop">
+            <path d="M-5 -5 L5 5 M5 -5 L-5 5" stroke="#9F1239" stroke-width="2.6" stroke-linecap="round"/>
+          </g>
+        </g></g>
+
+        <g id="car1" class="car">
+          <rect x="-11" y="-6.5" width="22" height="13" rx="4.5" fill="#FF8B00"/>
+          <rect x="0" y="-4.5" width="6.5" height="9" rx="2" fill="#062B47" opacity=".55"/>
+        </g>
+
+        <g id="co1" class="anim rise">
+          <rect x="28" y="516" width="334" height="46" rx="12" fill="#FF8B00" fill-opacity=".14" stroke="#FF8B00" stroke-opacity=".45"/>
+          <text x="44" y="537" font-size="10" font-weight="700" fill="#FF8B00" letter-spacing=".5">KANTOOR-ANKER</text>
+          <text x="44" y="553" font-size="10.5" font-weight="500" fill="#fff">Tussenstop op kantoor is een schakel, geen losse rit.</text>
+        </g>
+        <g id="co2" class="anim rise">
+          <rect x="28" y="516" width="334" height="46" rx="12" fill="#FF8B00" fill-opacity=".14" stroke="#FF8B00" stroke-opacity=".45"/>
+          <text x="44" y="537" font-size="10" font-weight="700" fill="#FF8B00" letter-spacing=".5">WOON-WERK</text>
+          <text x="44" y="553" font-size="10.5" font-weight="500" fill="#fff">Zakelijk voor de inkomstenbelasting, privé voor de btw.</text>
+        </g>
+      </g>
+
+      <!-- ══════════ SC3 · OVERNACHTING ══════════ -->
+      <g id="sc3" class="anim">
+        <rect x="20" y="76" width="350" height="496" rx="22" fill="var(--navy-600)"/>
+        <g stroke="#fff" stroke-opacity=".07" stroke-width="1.5">
+          <line x1="20" y1="220" x2="370" y2="220"/><line x1="20" y1="380" x2="370" y2="380"/>
+          <line x1="190" y1="76" x2="190" y2="572"/>
+        </g>
+        <text x="40" y="102" font-size="10.5" font-weight="700" fill="#B9C4D1" letter-spacing=".6">WOENSDAG 16-09 · MAASTRICHT</text>
+
+        <path id="route3b" d="M308 190 L336 330 L78 480" fill="none" stroke="#B9C4D1"
+              stroke-width="2.5" stroke-dasharray="7 7" stroke-linecap="round" opacity=".8"/>
+        <path id="route3" d="M78 480 L270 268 L308 190" fill="none" stroke="#FF8B00"
+              stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+        <g transform="translate(78,480)"><g id="p3home" class="anim pop">
+          <circle r="11" fill="#FF8B00"/><circle r="4" fill="#002F50"/>
+          <text x="17" y="4" font-size="11" font-weight="700" fill="#fff">Thuis</text>
+        </g></g>
+        <g transform="translate(270,268)"><g id="p3klant" class="anim pop">
+          <circle r="8" fill="#fff"/><circle r="3.2" fill="#002F50"/>
+          <text x="-15" y="4" font-size="11" font-weight="600" fill="#fff" text-anchor="end">Klant Maastricht</text>
+        </g></g>
+        <g transform="translate(308,190)"><g id="p3hotel" class="anim pop">
+          <circle r="13" fill="#FF8B00"/>
+          <rect x="-6" y="-1" width="12" height="5.5" rx="1.5" fill="#002F50"/>
+          <rect x="-6" y="-5.5" width="5" height="4" rx="1.5" fill="#002F50"/>
+          <text x="-18" y="-2" font-size="11" font-weight="700" fill="#fff" text-anchor="end">Hotel</text>
+          <text x="-18" y="12" font-size="9.5" font-weight="500" fill="#B9C4D1" text-anchor="end">overnachting</text>
+        </g></g>
+        <g transform="translate(336,330)"><g id="p3keulen" class="anim pop">
+          <circle r="9" fill="#B9C4D1"/><circle r="3.4" fill="#002F50"/>
+          <text x="-16" y="-1" font-size="11" font-weight="700" fill="#fff" text-anchor="end">Keulen</text>
+          <text x="-16" y="13" font-size="9.5" font-weight="500" fill="#B9C4D1" text-anchor="end">donderdag 10:00</text>
+        </g></g>
+
+        <g id="car3" class="car">
+          <rect x="-11" y="-6.5" width="22" height="13" rx="4.5" fill="#FF8B00"/>
+          <rect x="0" y="-4.5" width="6.5" height="9" rx="2" fill="#062B47" opacity=".55"/>
+        </g>
+
+        <g id="co3" class="anim rise">
+          <rect x="28" y="516" width="334" height="46" rx="12" fill="#FF8B00" fill-opacity=".14" stroke="#FF8B00" stroke-opacity=".45"/>
+          <text x="44" y="537" font-size="10" font-weight="700" fill="#FF8B00" letter-spacing=".5">OVERNACHTING</text>
+          <text x="44" y="553" font-size="10.5" font-weight="500" fill="#fff">Donderdag begint bij het hotel. De keten blijft sluitend.</text>
+        </g>
+      </g>
+
+      <!-- ══════════ SC4 · TWIJFELCONTROLE ══════════ -->
+      <g id="sc4" class="anim">
+        <g id="sc4chrome" class="anim rise">
+          <rect x="42" y="176" width="306" height="260" rx="22" fill="var(--paper)" filter="url(#soft)"/>
+          <text x="66" y="212" font-size="10.5" font-weight="700" fill="#FF8B00" letter-spacing=".6">TWIJFELGEVAL · 1 VAN 3</text>
+          <text x="66" y="242" font-size="16" font-weight="800" fill="#002F50">Lunch met Peter</text>
+          <text x="66" y="264" font-size="12" font-weight="500" fill="#64748B">12:30 – 13:30 · Utrecht Centraal</text>
+          <line x1="66" y1="284" x2="324" y2="284" stroke="#E6EBF1" stroke-width="1.5"/>
+        </g>
+        <g id="opt1" class="anim pop">
+          <rect x="66" y="304" width="120" height="42" rx="11" fill="var(--paper-mute)"/>
+          <text x="126" y="330" font-size="13" font-weight="700" fill="#002F50" text-anchor="middle">Zakelijk</text>
+        </g>
+        <g id="opt2" class="anim pop">
+          <rect x="204" y="304" width="120" height="42" rx="11" fill="var(--paper-mute)"/>
+          <text x="264" y="330" font-size="13" font-weight="700" fill="#002F50" text-anchor="middle">Privé</text>
+        </g>
+        <g id="optPick" class="anim pop">
+          <rect x="66" y="304" width="120" height="42" rx="11" fill="#FF8B00"/>
+          <text x="126" y="330" font-size="13" font-weight="700" fill="#002F50" text-anchor="middle">Zakelijk</text>
+        </g>
+        <g id="optNote" class="anim rise">
+          <text x="195" y="384" font-size="11.5" font-weight="600" fill="#002F50" text-anchor="middle">Onthouden voor de volgende keer.</text>
+          <text x="195" y="404" font-size="11" font-weight="500" fill="#64748B" text-anchor="middle">91 items gingen vanzelf goed.</text>
+        </g>
+      </g>
+
+      <!-- ══════════ SC5 · EXPORT ══════════ -->
+      <g id="sc5" class="anim">
+        <g id="doc1" class="anim drop">
+          <rect x="48" y="140" width="140" height="184" rx="14" fill="var(--paper)" filter="url(#soft)"/>
+          <rect x="66" y="164" width="60" height="20" rx="6" fill="#FEE2E2"/>
+          <text x="96" y="178" font-size="10" font-weight="800" fill="#B91C1C" text-anchor="middle">PDF</text>
+          <g fill="#E6EBF1">
+            <rect x="66" y="198" width="104" height="7" rx="3.5"/><rect x="66" y="214" width="86" height="7" rx="3.5"/>
+            <rect x="66" y="230" width="104" height="7" rx="3.5"/><rect x="66" y="246" width="70" height="7" rx="3.5"/>
+            <rect x="66" y="262" width="104" height="7" rx="3.5"/>
+          </g>
+          <text x="66" y="296" font-size="10.5" font-weight="700" fill="#002F50">Voor je accountant</text>
+        </g>
+        <g id="doc2" class="anim drop">
+          <rect x="202" y="140" width="140" height="184" rx="14" fill="var(--paper)" filter="url(#soft)"/>
+          <rect x="220" y="164" width="60" height="20" rx="6" fill="#DCFCE7"/>
+          <text x="250" y="178" font-size="10" font-weight="800" fill="#166534" text-anchor="middle">EXCEL</text>
+          <g fill="#E6EBF1">
+            <rect x="220" y="198" width="104" height="7" rx="3.5"/><rect x="220" y="214" width="104" height="7" rx="3.5"/>
+            <rect x="220" y="230" width="104" height="7" rx="3.5"/><rect x="220" y="246" width="104" height="7" rx="3.5"/>
+            <rect x="220" y="262" width="104" height="7" rx="3.5"/>
+          </g>
+          <text x="220" y="296" font-size="10.5" font-weight="700" fill="#002F50">Voor jezelf</text>
+        </g>
+        <g id="totals" class="anim rise">
+          <text id="kmTotal" x="195" y="392" font-family="var(--font-mono)" font-size="36" font-weight="600" fill="#FF8B00" text-anchor="middle">0,0 km</text>
+          <text id="euroTotal" x="195" y="424" font-family="var(--font-mono)" font-size="17" font-weight="600" fill="#fff" text-anchor="middle">€ 0,00</text>
+          <text x="195" y="448" font-size="10.5" font-weight="600" fill="#B9C4D1" text-anchor="middle" letter-spacing=".4">SEPTEMBER 2026 · € 0,25 PER KILOMETER</text>
+        </g>
+        <g id="chips" class="anim rise">
+          <rect x="96" y="476" width="60" height="26" rx="13" fill="#fff" fill-opacity=".12"/>
+          <text x="126" y="493" font-size="10.5" font-weight="700" fill="#fff" text-anchor="middle">CSV</text>
+          <rect x="165" y="476" width="60" height="26" rx="13" fill="#fff" fill-opacity=".12"/>
+          <text x="195" y="493" font-size="10.5" font-weight="700" fill="#fff" text-anchor="middle">7 JAAR</text>
+          <rect x="234" y="476" width="60" height="26" rx="13" fill="#fff" fill-opacity=".12"/>
+          <text x="264" y="493" font-size="10.5" font-weight="700" fill="#fff" text-anchor="middle">PWA</text>
+        </g>
+      </g>
+
+      <!-- ══════════ EINDKAART ══════════ -->
+      <g id="end" class="anim">
+        <rect width="390" height="700" fill="#002F50" opacity=".97"/>
+        <g id="endInner" class="anim rise">
+          <text x="195" y="306" font-size="42" font-weight="800" fill="#fff" text-anchor="middle" letter-spacing=".5">Rit<tspan fill="#FF8B00">Sync</tspan></text>
+          <text x="195" y="338" font-size="15" font-weight="500" fill="#B9C4D1" text-anchor="middle">Je agenda rijdt, RitSync telt.</text>
+          <rect x="115" y="372" width="160" height="1.5" fill="#FF8B00" opacity=".5"/>
+          <text x="195" y="402" font-size="12.5" font-weight="700" fill="#FF8B00" text-anchor="middle">Een maand gratis, op persoonlijke uitnodiging.</text>
+          <text x="195" y="424" font-size="11.5" font-weight="500" fill="#B9C4D1" text-anchor="middle">Voor de eerste honderd testers.</text>
+        </g>
+      </g>
+    </svg>
+
+    <div class="subtitle" id="sub" aria-live="polite"><span></span></div>
+  </div>
+
+  <div class="bar">
+    <button id="replay" type="button">Opnieuw afspelen</button>
+    <div class="track"><i id="prog"></i></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const svg     = document.getElementById('film');
+  const subBox  = document.getElementById('sub');
+  const subText = subBox.querySelector('span');
+  const prog    = document.getElementById('prog');
+  const replay  = document.getElementById('replay');
+  const kmTotal = document.getElementById('kmTotal');
+  const euroTot = document.getElementById('euroTotal');
+
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Kilometertarief 2026: verhoogd naar EUR 0,25 met terugwerkende kracht
+  // vanaf 01-01-2026. Geldt ook voor IB-ondernemers (ZZP).
+  const TARIEF = 0.25;
+
+  const ROUTES = ['route1','route3','route3b'].map(id => {
+    const el = document.getElementById(id);
+    return { el: el, len: el.getTotalLength(), dashed: id === 'route3b' };
+  });
+  function resetRoutes(){
+    ROUTES.forEach(r => {
+      r.el.style.strokeDasharray  = r.dashed ? '7 7' : r.len;
+      r.el.style.strokeDashoffset = r.len;
+    });
+  }
+
+  const show = sel => document.querySelectorAll(sel).forEach(n => n.classList.add('on'));
+  const hide = sel => document.querySelectorAll(sel).forEach(n => n.classList.remove('on'));
+
+  function say(text){
+    subBox.classList.add('swap');
+    setTimeout(() => { subText.textContent = text; subBox.classList.remove('swap'); }, reduced ? 0 : 180);
+  }
+
+  // Nederlandse notatie: komma als decimaalteken, punt als duizendtal
+  function nl(n, dec){
+    const s = n.toFixed(dec);
+    const parts = s.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return parts.join(',');
+  }
+
+  // Laat de auto de route rijden terwijl de lijn zichzelf tekent.
+  function drive(pathId, carId, duration){
+    const path = document.getElementById(pathId);
+    const car  = document.getElementById(carId);
+    const len  = path.getTotalLength();
+    car.classList.add('on');
+    const t0 = performance.now();
+    (function step(now){
+      const p = Math.min((now - t0) / duration, 1);
+      const e = p < .5 ? 2*p*p : 1 - Math.pow(-2*p + 2, 2)/2;   // easeInOutQuad
+      path.style.strokeDashoffset = len * (1 - e);
+      const a = path.getPointAtLength(len * e);
+      const b = path.getPointAtLength(Math.min(len * e + 1, len));
+      const ang = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
+      car.setAttribute('transform', 'translate(' + a.x + ',' + a.y + ') rotate(' + ang + ')');
+      if (p < 1) requestAnimationFrame(step);
+    })(t0);
+  }
+
+  // Onthult de stippellijn van de volgende ochtend, zonder auto.
+  function draw(pathId, duration){
+    const path = document.getElementById(pathId);
+    const len  = path.getTotalLength();
+    const t0 = performance.now();
+    (function step(now){
+      const p = Math.min((now - t0) / duration, 1);
+      path.style.strokeDashoffset = len * (1 - p);
+      if (p < 1) requestAnimationFrame(step);
+    })(t0);
+  }
+
+  function countUp(km, duration){
+    const t0 = performance.now();
+    (function step(now){
+      const p = Math.min((now - t0) / duration, 1);
+      const e = 1 - Math.pow(1 - p, 3);
+      kmTotal.textContent = nl(km * e, 1) + ' km';
+      euroTot.textContent = '€ ' + nl(km * e * TARIEF, 2);
+      if (p < 1) requestAnimationFrame(step);
+    })(t0);
+  }
+
+  /* ══════════════ TIJDLIJN ══════════════
+     t = milliseconden vanaf de start.
+     on / off = CSS-selectors · sub = ondertitel · run = eigen functie.
+     Hertimen doe je hier; verder hoeft er niets te veranderen.
+  ══════════════════════════════════════ */
+  const CUES = [
+    /* SC1 — agenda */
+    { t:     0, on:'#mark,#sc1', sub:'Dinsdag 15 september. Zes regels in je agenda.' },
+    { t:   700, on:'#ap1' },
+    { t:   980, on:'#ap2' },
+    { t:  1260, on:'#ap3' },
+    { t:  1540, on:'#ap4' },
+    { t:  1820, on:'#ap5' },
+    { t:  2100, on:'#ap6', sub:'Zes keer straks bedenken hoeveel kilometer dat ook alweer was.' },
+    { t:  3400, on:'#engine', sub:'RitSync leest ze zelf. 203 herkenningsregels, en bij twijfel de AI erbij.' },
+    { t:  4300, on:'#tg1' },
+    { t:  4520, on:'#tg2' },
+    { t:  4740, on:'#tg3' },
+    { t:  4960, on:'#tg4' },
+    { t:  5180, on:'#tg5' },
+    { t:  5450, on:'#tg6', sub:'Zakelijk, intern, woon-werk, privé. Zonder dat jij iets aanvinkt.' },
+    { t:  7000, sub:'De tandarts doet twee keer pijn: die kilometers zijn ook nog eens niet aftrekbaar.' },
+
+    /* SC2 — dagketen dinsdag */
+    { t:  8800, off:'#sc1', on:'#sc2', sub:'De rest wordt één dagketen.' },
+    { t:  9300, on:'#p1home' },
+    { t:  9530, on:'#p1office' },
+    { t:  9760, on:'#p1a' },
+    { t:  9990, on:'#p1b' },
+    { t: 10220, on:'#p1c' },
+    { t: 10550, on:'#p1p' },
+    { t: 11150, on:'#stamp', sub:'Privé gaat eruit. Automatisch.' },
+    { t: 11850, run:() => document.getElementById('p1p').classList.add('ejected') },
+    { t: 12500, sub:'Thuis, kantoor, Amsterdam, terug langs kantoor, Rotterdam, Utrecht, thuis.' },
+    { t: 13000, run:() => drive('route1','car1', reduced ? 500 : 7600) },
+    { t: 15000, on:'#co1', sub:'Even langs kantoor tussen twee afspraken? Dat is een schakel in de keten.' },
+    { t: 17200, sub:'Geen losse rit die je later niet meer kunt verantwoorden.' },
+    { t: 18900, off:'#co1' },
+    { t: 19300, on:'#co2', sub:'En die eerste rit naar kantoor is woon-werk.' },
+    { t: 20800, sub:'Zakelijk voor de inkomstenbelasting, privé voor de btw. RitSync houdt dat apart.' },
+    { t: 22600, sub:'Dinsdag: 222,9 kilometer, van deur tot deur onderbouwd.' },
+
+    /* SC3 — overnachting */
+    { t: 24400, off:'#sc2,#co2', on:'#sc3', sub:'Woensdag. Klant in Maastricht.' },
+    { t: 24900, on:'#p3home' },
+    { t: 25200, on:'#p3klant' },
+    { t: 25600, run:() => drive('route3','car3', reduced ? 400 : 3400) },
+    { t: 28200, on:'#p3hotel', sub:'En je rijdt niet terug.' },
+    { t: 29400, sub:'De keten sluit vandaag niet. Hij loopt door tot morgenochtend.' },
+    { t: 30800, on:'#p3keulen', run:() => draw('route3b', reduced ? 300 : 2000),
+                sub:'Donderdag tien uur in Keulen. Daarna pas naar huis.' },
+    { t: 32800, on:'#co3', sub:'Je dag begint bij het hotel, niet bij je voordeur.' },
+    { t: 34400, sub:'Precies zoals je het aan de Belastingdienst zou uitleggen.' },
+
+    /* SC4 — twijfelcontrole */
+    { t: 36400, off:'#sc3,#co3', on:'#sc4', sub:'En als RitSync het écht niet weet?' },
+    { t: 37400, on:'#opt1' },
+    { t: 37650, on:'#opt2' },
+    { t: 38200, sub:'Dan gokt het niet. Dan vraagt het.' },
+    { t: 39800, on:'#optPick' },
+    { t: 40300, on:'#optNote', sub:'Eén tik. En de volgende keer weet het systeem het zelf.' },
+
+    /* SC5 — export */
+    { t: 42800, off:'#sc4', on:'#sc5', sub:'Eind van de maand: één knop.' },
+    { t: 43400, on:'#doc1' },
+    { t: 43900, on:'#doc2', sub:'PDF voor je accountant. Excel voor jezelf.' },
+    { t: 45100, on:'#totals', run:() => countUp(1284.6, reduced ? 300 : 1600) },
+    { t: 46600, sub:'1.284,6 kilometer, tegen het tarief van 2026: € 0,25 per kilometer.' },
+    { t: 48400, on:'#chips', sub:'Zeven jaar bewaarplicht? Staat er al in. En de app staat op je telefoon.' },
+
+    /* Eindkaart */
+    { t: 50800, off:'#sc5', on:'#end', sub:'' },
+    { t: 51300, on:'#endInner' },
+    { t: 54000, run:() => { replay.style.visibility = 'visible'; } }
+  ];
+
+  const DURATION = 54000;
+  let cursor = 0, t0 = 0, raf = null;
+
+  function apply(c){
+    if (c.off) hide(c.off);
+    if (c.on)  show(c.on);
+    if (c.sub !== undefined) say(c.sub);
+    if (c.run) c.run();
+  }
+
+  function tick(now){
+    const elapsed = now - t0;
+    while (cursor < CUES.length && CUES[cursor].t <= elapsed) apply(CUES[cursor++]);
+    prog.style.width = Math.min(elapsed / DURATION * 100, 100) + '%';
+    if (elapsed < DURATION) raf = requestAnimationFrame(tick);
+  }
+
+  function play(){
+    if (raf) cancelAnimationFrame(raf);
+    svg.querySelectorAll('.anim').forEach(n => n.classList.remove('on','ejected'));
+    show('#sc1chrome,#sc4chrome');                 // scene chrome hoort altijd aan te staan
+    svg.querySelectorAll('.car').forEach(c => { c.classList.remove('on'); c.removeAttribute('transform'); });
+    kmTotal.textContent = '0,0 km';
+    euroTot.textContent = '€ 0,00';
+    subText.textContent = '';
+    resetRoutes();
+    cursor = 0;
+    replay.style.visibility = 'hidden';
+    t0 = performance.now();
+    raf = requestAnimationFrame(tick);
+  }
+
+  replay.addEventListener('click', play);
+  play();
+})();
+</script>
+</body>
+</html>
