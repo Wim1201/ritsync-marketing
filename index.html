@@ -403,13 +403,47 @@ button{border:0;border-radius:999px;background:var(--orange);color:#09243a;font-
  const overlay=q('#startOverlay'), startBtn=q('#startBtn');
  let musicRaf=null;
 
+ // iPhone/iPad (Safari): .volume op een audio-element wordt genegeerd.
+ // Daarom loopt de muziek via een Web Audio-gainknop; op browsers zonder
+ // Web Audio valt de code terug op het gewone volume.
+ let actx=null, gain=null, curVol=0;
+ function ensureAudioGraph(){
+   if(actx){actx.resume&&actx.resume();return}
+   const AC=window.AudioContext||window.webkitAudioContext;
+   if(!AC)return;
+   try{
+     actx=new AC();
+     const src=actx.createMediaElementSource(music);
+     gain=actx.createGain(); gain.gain.value=0;
+     src.connect(gain); gain.connect(actx.destination);
+     music.volume=1;
+   }catch(e){actx=null;gain=null}
+ }
+ function setVol(v){
+   curVol=Math.max(0,Math.min(1,v));
+   if(gain){gain.gain.value=curVol}else{music.volume=curVol}
+ }
+
+ // iPhone/iPad: geluid mag alleen starten als direct gevolg van een tik.
+ // Deze functie "ontgrendelt" alle drie de geluidssporen binnen de tik,
+ // zodat ook het slot (dat pas op ±57 s start) mag klinken.
+ function unlockAudio(){
+   [vOpen,vSlot,music].forEach(a=>{
+     try{
+       const p=a.play();
+       if(p&&p.catch)p.catch(()=>{});
+       a.pause(); a.currentTime=0;
+     }catch(e){}
+   });
+ }
+
  // Regelt het muziekvolume geleidelijk naar een doelwaarde (0..1).
  function musicTo(target,ms){
    if(musicRaf)cancelAnimationFrame(musicRaf);
-   const from=music.volume, st=performance.now();
+   const from=curVol, st=performance.now();
    (function step(now){
      const p=Math.min((now-st)/ms,1);
-     music.volume=Math.max(0,Math.min(1,from+(target-from)*p));
+     setVol(from+(target-from)*p);
      if(p<1) musicRaf=requestAnimationFrame(step);
    })(st);
  }
@@ -449,7 +483,7 @@ button{border:0;border-radius:999px;background:var(--orange);color:#09243a;font-
   /* ── OPENING · stem Wim (26,0 s) over scène 1 en 2 ──
      De oranje overlay toont de gesproken tekst. */
   {t:0,on:'#s1,#mark',
-     run:()=>{vOpen.play();music.volume=0;music.play();musicTo(.12,2500)},
+     run:()=>{vOpen.play();setVol(0);music.play();musicTo(.12,2500)},
      sub:'RitSync is ontstaan uit ergernis.'},
   {t:1500,on:'#coffee'},
   {t:3300,sub:'Een kastje in de auto vroeg te veel handelingen en ik vergat het nogal eens aan en uit te zetten.'},
@@ -525,7 +559,7 @@ button{border:0;border-radius:999px;background:var(--orange);color:#09243a;font-
    // audio terug naar het begin
    if(musicRaf)cancelAnimationFrame(musicRaf);
    [music,vOpen,vSlot].forEach(a=>{a.pause();a.currentTime=0});
-   music.volume=0;
+   setVol(0);
  }
  function apply(c){if(c.off)hide(c.off);if(c.on)show(c.on);if(c.sub!==undefined)say(c.sub,c.emph);if(c.run)c.run()}
  function tick(now){
@@ -536,9 +570,15 @@ button{border:0;border-radius:999px;background:var(--orange);color:#09243a;font-
  }
  function play(){if(raf)cancelAnimationFrame(raf);reset();t0=performance.now();raf=requestAnimationFrame(tick)}
  // Geen autoplay: de startknop is het klikmoment dat browsers eisen
- // voordat er geluid mag klinken.
- startBtn.addEventListener('click',()=>{overlay.classList.add('hidden');play()});
- replay.addEventListener('click',play);
+ // voordat er geluid mag klinken. Binnen die tik worden ook alle
+ // geluidssporen ontgrendeld (nodig voor iPhone/iPad).
+ startBtn.addEventListener('click',()=>{
+   ensureAudioGraph(); unlockAudio();
+   overlay.classList.add('hidden'); play();
+ });
+ replay.addEventListener('click',()=>{
+   ensureAudioGraph(); unlockAudio(); play();
+ });
 })();
 </script>
 </body>
