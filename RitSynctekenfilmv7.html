@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>RitSync — De werkdag van Mark</title>
+<style>
+/* ============================================================
+   RitSync tekenfilm v7 — "De werkdag van Mark" · ca. 63 sec
+
+   Opzet volgens de vijf verbeterpunten van Wim (26-08-2026):
+   - doorlopende vertelstem (zes fragmenten, assets/shot1..shot6.mp3)
+   - Mark als hoofdpersoon: ochtend -> ritten -> avond klaar
+   - hoogtepunt: agenda-afspraak vliegt uit de agenda en wordt
+     een rit op de kaart (scène 2)
+   - vrijwel geen tekst in beeld; alleen kreten
+     (AGENDA -> RIT · PRIVÉ · ZAKELIJK · 141,8 KM · KLAAR)
+   - slot: eindkaart met testeroproep (stem) en registratieknop
+
+   Muziek: assets/road-trip-music-sonican.mp3, zacht onder de
+   stem (Web Audio-gain; iPhone-proof zoals v6).
+   Alle timing staat in de cues-array onderaan.
+   ============================================================ */
+:root{
+  --navy:#002F50;--navy2:#064a78;--orange:#ff8b00;--green:#19a05b;
+  --red:#df4a4a;--blue:#2e73c8;--ink:#17324a;--muted:#6e7f8f;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:#061e31;color:white;font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif}
+body{min-height:100vh;display:grid;place-items:center;padding:14px}
+.wrap{width:min(100%,420px)}
+.stage{position:relative;aspect-ratio:9/16;overflow:hidden;border-radius:24px;background:linear-gradient(#dff4ff 0 62%,#d8efd1 62%);box-shadow:0 20px 60px #0008}
+svg{width:100%;height:100%;display:block}
+.scene{opacity:0;pointer-events:none;transition:opacity .5s ease}
+.scene.on{opacity:1;pointer-events:auto}
+.pop{opacity:0;transform-box:fill-box;transform-origin:center;transform:scale(.6);transition:.42s cubic-bezier(.2,.85,.25,1.2)}
+.pop.on{opacity:1;transform:scale(1)}
+.rise{opacity:0;transform:translateY(20px);transition:.48s ease}
+.rise.on{opacity:1;transform:none}
+.badge{opacity:0;transform:scale(1.5) rotate(-8deg);transform-box:fill-box;transform-origin:center;transition:.32s ease}
+.badge.on{opacity:1;transform:scale(1) rotate(-4deg)}
+.car{opacity:0}
+.car.on{opacity:1}
+
+/* vliegende agenda-chips: de kern van scène 2 */
+.chip{transform-box:fill-box;transform-origin:center;transition:transform 1.1s cubic-bezier(.35,.7,.3,1), opacity .35s ease .85s}
+/* agenda-regel die "gebruikt" is */
+.agrow{transition:opacity .5s ease}
+.agrow.used{opacity:.3}
+/* tandarts wordt van de kaart gestuiterd */
+.kicked{opacity:0!important;transform:translate(70px,120px) rotate(18deg)!important;
+        transform-box:fill-box;transform-origin:center;
+        transition:opacity .65s ease,transform .65s cubic-bezier(.5,-.45,.7,1)}
+/* kilometerteller-nadruk (141,8 KM) */
+#counterBox rect{transition:fill .35s ease}
+#counterBox text{transition:fill .35s ease}
+#counterBox.emph rect{fill:#ff8b00}
+#counterBox.emph #kmLabel{fill:#5c3300}
+#counterBox.emph #km{fill:#002F50}
+/* laptop klapt dicht */
+#lid{transform-box:fill-box;transform-origin:center bottom;transition:transform 1s cubic-bezier(.4,0,.6,1)}
+#lid.closed{transform:scaleY(.07)}
+
+#cta{cursor:pointer}
+#cta rect{transition:filter .2s ease}
+#cta:hover rect{filter:brightness(1.08)}
+.controls{display:flex;gap:10px;align-items:center;margin-top:10px}
+.track{height:4px;flex:1;background:#ffffff33;border-radius:9px;overflow:hidden}
+.track i{display:block;height:100%;width:0;background:var(--orange)}
+button{border:0;border-radius:999px;background:var(--orange);color:#09243a;font-weight:800;padding:9px 15px;cursor:pointer}
+
+.startover{
+  position:absolute;inset:0;z-index:5;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  background:rgba(0,25,42,.55);backdrop-filter:blur(2px);
+  transition:opacity .35s ease;
+}
+.startover.hidden{opacity:0;pointer-events:none}
+.startover button{font-size:16px;padding:14px 28px;box-shadow:0 14px 34px rgba(0,0,0,.4)}
+.startover span{font-size:12.5px;font-weight:600;color:#cfe3f2}
+@media (prefers-reduced-motion:reduce){
+  .pop,.rise,.badge,.chip{transition:opacity .15s linear;transform:none!important}
+  *{animation:none!important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="stage">
+<svg id="film" viewBox="0 0 390 694" role="img" aria-label="RitSync tekenfilm: de werkdag van Mark">
+<defs>
+ <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#dff4ff"/><stop offset="1" stop-color="#f8fcff"/></linearGradient>
+ <linearGradient id="avond" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#0e2c47"/><stop offset="1" stop-color="#1b3a55"/></linearGradient>
+ <filter id="shadow"><feDropShadow dx="0" dy="5" stdDeviation="6" flood-opacity=".18"/></filter>
+</defs>
+<rect width="390" height="694" fill="url(#sky)"/>
+<text x="20" y="32" font-size="16" font-weight="900" fill="#002F50">Rit<tspan fill="#FF8B00">Sync</tspan></text>
+
+<!-- ══════ SCENE 1 · OCHTEND ══════ -->
+<g id="s1" class="scene">
+  <rect x="0" y="438" width="390" height="256" fill="#f6ead1"/>
+  <rect x="24" y="350" width="145" height="18" rx="9" fill="#c58b55"/>
+  <rect x="44" y="368" width="10" height="95" fill="#a66f3d"/><rect x="140" y="368" width="10" height="95" fill="#a66f3d"/>
+  <g id="mark1" class="rise">
+    <circle cx="105" cy="264" r="42" fill="#f1b878"/>
+    <path d="M66 253 Q76 205 111 210 Q147 216 149 248 Q126 228 89 236Z" fill="#6c351a"/>
+    <circle cx="90" cy="263" r="4" fill="#17324a"/><circle cx="119" cy="263" r="4" fill="#17324a"/>
+    <path d="M91 282 Q104 291 119 281" fill="none" stroke="#7b3d2a" stroke-width="3" stroke-linecap="round"/>
+    <rect x="69" y="305" width="76" height="90" rx="22" fill="#0b4f7c"/>
+    <path d="M90 306 L105 328 L120 306" fill="#eef7fb"/>
+  </g>
+  <g id="coffee1" class="pop">
+    <rect x="37" y="312" width="35" height="39" rx="5" fill="#fff" stroke="#cbd5df"/>
+    <path d="M72 322 q20 0 15 17 q-3 10-15 7" fill="none" stroke="#fff" stroke-width="7"/>
+    <path d="M46 306 q-7-12 1-20 M57 306 q-6-11 2-19" stroke="#c2d0d8" stroke-width="2" fill="none"/>
+  </g>
+  <g id="phone1" class="pop" filter="url(#shadow)">
+    <rect x="202" y="96" width="151" height="342" rx="24" fill="#142b3e"/>
+    <rect x="210" y="108" width="135" height="318" rx="18" fill="#fff"/>
+    <text x="225" y="139" font-size="13" font-weight="800" fill="#17324a">Vandaag</text>
+    <g font-size="10.5" fill="#17324a">
+      <rect x="221" y="154" width="113" height="44" rx="8" fill="#edf4ff"/><text x="230" y="172">08:30 · Kantoor</text><text x="230" y="188" fill="#708090">woon-werk</text>
+      <rect x="221" y="206" width="113" height="44" rx="8" fill="#effaf3"/><text x="230" y="224">10:00 · Bezichtiging</text><text x="230" y="240" fill="#708090">Rotterdam</text>
+      <rect x="221" y="258" width="113" height="44" rx="8" fill="#effaf3"/><text x="230" y="276">14:00 · Klant</text><text x="230" y="292" fill="#708090">Amsterdam</text>
+      <rect x="221" y="310" width="113" height="44" rx="8" fill="#effaf3"/><text x="230" y="328">16:00 · Notaris</text><text x="230" y="344" fill="#708090">Utrecht</text>
+      <rect x="221" y="362" width="113" height="44" rx="8" fill="#fff0f0"/><text x="230" y="380">18:15 · Tandarts</text><text x="230" y="396" fill="#708090">privé</text>
+    </g>
+  </g>
+</g>
+
+<!-- ══════ SCENE 2 · DE DAG: AGENDA WORDT RIT ══════ -->
+<g id="s2" class="scene">
+ <rect x="0" y="54" width="390" height="640" fill="#e8f2df"/>
+ <g opacity=".5" stroke="#c3d3bf" stroke-width="2"><path d="M0 300 C90 250 140 370 230 310 S350 300 390 250" fill="none"/><path d="M55 230 L100 694 M300 230 L268 694"/></g>
+
+ <!-- compacte agenda bovenin -->
+ <g filter="url(#shadow)">
+   <rect x="30" y="66" width="330" height="152" rx="16" fill="#fff"/>
+   <text x="48" y="92" font-size="12" font-weight="800" fill="#17324a">Vandaag</text>
+   <g id="agRow1" class="agrow">
+     <rect x="48" y="102" width="294" height="32" rx="8" fill="#effaf3"/>
+     <text x="60" y="123" font-size="11.5" font-weight="700" fill="#17324a">10:00 · Bezichtiging · Rotterdam</text>
+   </g>
+   <g id="agRow2" class="agrow">
+     <rect x="48" y="140" width="294" height="32" rx="8" fill="#effaf3"/>
+     <text x="60" y="161" font-size="11.5" font-weight="700" fill="#17324a">14:00 · Klant · Amsterdam</text>
+   </g>
+   <g id="agRow3" class="agrow">
+     <rect x="48" y="178" width="294" height="32" rx="8" fill="#fff0f0"/>
+     <text x="60" y="199" font-size="11.5" font-weight="700" fill="#17324a">18:15 · Tandarts</text>
+   </g>
+ </g>
+
+ <!-- kreet AGENDA -> RIT -->
+ <g id="agRit" class="badge">
+   <rect x="30" y="238" width="150" height="34" rx="10" fill="#002F50"/>
+   <text x="105" y="260" text-anchor="middle" font-size="12" font-weight="900" fill="#fff">AGENDA <tspan fill="#FF8B00">→</tspan> RIT</text>
+ </g>
+
+ <!-- routes (worden getekend terwijl de auto rijdt) -->
+ <path id="p1" d="M80 540 C70 470 90 430 110 380" fill="none" stroke="#ff8b00" stroke-width="6" stroke-linecap="round"/>
+ <path id="p2" d="M110 380 C140 330 210 330 270 300" fill="none" stroke="#ff8b00" stroke-width="6" stroke-linecap="round"/>
+ <path id="p3" d="M270 300 C325 320 320 440 300 480 C285 535 180 565 80 540" fill="none" stroke="#ff8b00" stroke-width="6" stroke-linecap="round"/>
+
+ <!-- punten op de kaart -->
+ <g class="pop" id="pinT"><circle cx="80" cy="540" r="13" fill="#ff8b00"/><text x="80" y="568" text-anchor="middle" font-size="11.5" font-weight="800" fill="#17324a">Thuis</text></g>
+ <g class="pop" id="pinR"><circle cx="110" cy="380" r="11" fill="#19a05b"/><text x="110" y="360" text-anchor="middle" font-size="11.5" font-weight="800" fill="#17324a">Rotterdam</text></g>
+ <g class="pop" id="pinA"><circle cx="270" cy="300" r="11" fill="#19a05b"/><text x="270" y="280" text-anchor="middle" font-size="11.5" font-weight="800" fill="#17324a">Amsterdam</text></g>
+ <g class="pop" id="pinU"><circle cx="300" cy="480" r="11" fill="#7048a8"/><text x="322" y="504" text-anchor="middle" font-size="11.5" font-weight="800" fill="#17324a">Utrecht</text></g>
+
+ <!-- ZAKELIJK-kreten bij de pins -->
+ <g id="zakBadges" class="badge">
+   <rect x="128" y="386" width="62" height="20" rx="7" fill="#ddf6e7"/><text x="159" y="400" text-anchor="middle" font-size="9" font-weight="900" fill="#16864d">ZAKELIJK</text>
+   <rect x="288" y="306" width="62" height="20" rx="7" fill="#ddf6e7"/><text x="319" y="320" text-anchor="middle" font-size="9" font-weight="900" fill="#16864d">ZAKELIJK</text>
+ </g>
+
+ <!-- vliegende chips (kopieën van de agendaregels) -->
+ <g id="chip1" class="chip">
+   <rect x="48" y="102" width="294" height="32" rx="8" fill="#effaf3" stroke="#19a05b" stroke-width="1.5"/>
+   <text x="60" y="123" font-size="11.5" font-weight="700" fill="#17324a">10:00 · Bezichtiging · Rotterdam</text>
+ </g>
+ <g id="chip2" class="chip">
+   <rect x="48" y="140" width="294" height="32" rx="8" fill="#effaf3" stroke="#19a05b" stroke-width="1.5"/>
+   <text x="60" y="161" font-size="11.5" font-weight="700" fill="#17324a">14:00 · Klant · Amsterdam</text>
+ </g>
+ <g id="chip3o" class="chip">
+   <g id="chip3">
+     <rect x="48" y="178" width="294" height="32" rx="8" fill="#fff0f0" stroke="#df4a4a" stroke-width="1.5"/>
+     <text x="60" y="199" font-size="11.5" font-weight="700" fill="#17324a">18:15 · Tandarts</text>
+     <g id="stampPrive" class="badge">
+       <rect x="222" y="180" width="60" height="26" rx="8" fill="#df4a4a"/>
+       <text x="252" y="198" text-anchor="middle" font-size="11" font-weight="900" fill="#fff">PRIVÉ</text>
+     </g>
+   </g>
+ </g>
+
+ <g id="car" class="car">
+   <rect x="-18" y="-10" width="36" height="20" rx="7" fill="#2e73c8"/>
+   <rect x="2" y="-7" width="10" height="14" rx="3" fill="#dff4ff"/>
+   <circle cx="5" cy="-2" r="2.6" fill="#fff"/><circle cx="6" cy="-2" r="1.3" fill="#17324a"/>
+   <circle cx="10" cy="-2" r="2.6" fill="#fff"/><circle cx="11" cy="-2" r="1.3" fill="#17324a"/>
+   <circle cx="-10" cy="10" r="5" fill="#17324a"/><circle cx="10" cy="10" r="5" fill="#17324a"/>
+ </g>
+
+ <g id="counterBox" class="rise" filter="url(#shadow)">
+   <rect x="45" y="592" width="300" height="54" rx="16" fill="#fff"/>
+   <text id="kmLabel" x="70" y="614" font-size="10" font-weight="800" fill="#6e7f8f">KILOMETERS AUTOMATISCH</text>
+   <text id="km" x="70" y="637" font-size="22" font-weight="900" fill="#17324a">0,0 km</text>
+ </g>
+</g>
+
+<!-- ══════ SCENE 3 · AVOND ══════ -->
+<g id="s5" class="scene">
+ <rect x="0" y="0" width="390" height="694" fill="url(#avond)"/>
+ <circle cx="330" cy="90" r="26" fill="#fff7d9" opacity=".9"/>
+ <rect x="0" y="470" width="390" height="224" fill="#122c44"/>
+ <!-- bureau -->
+ <rect x="40" y="430" width="310" height="16" rx="6" fill="#7a5230"/>
+ <rect x="60" y="446" width="12" height="110" fill="#5d3d22"/><rect x="318" y="446" width="12" height="110" fill="#5d3d22"/>
+ <!-- laptop: voet + klappend scherm -->
+ <g filter="url(#shadow)">
+   <rect id="lid" x="150" y="330" width="120" height="96" rx="8" fill="#243847"/>
+   <rect x="140" y="420" width="140" height="10" rx="5" fill="#38506a"/>
+ </g>
+ <!-- Mark, ontspannen achterover -->
+ <g id="markAvond" class="rise" transform="rotate(-6 105 330)">
+   <circle cx="105" cy="300" r="36" fill="#f1b878"/>
+   <path d="M72 291 Q81 250 111 254 Q140 259 142 287 Q120 269 92 275Z" fill="#6c351a"/>
+   <circle cx="92" cy="299" r="3.6" fill="#17324a"/><circle cx="117" cy="299" r="3.6" fill="#17324a"/>
+   <path d="M92 315 Q105 328 119 313" fill="none" stroke="#7b3d2a" stroke-width="3.5" stroke-linecap="round"/>
+   <rect x="72" y="336" width="66" height="86" rx="20" fill="#0b4f7c"/>
+ </g>
+ <!-- rapportkaart -->
+ <g id="rapport" class="rise" filter="url(#shadow)">
+   <rect x="95" y="120" width="200" height="150" rx="18" fill="#fff"/>
+   <circle cx="145" cy="170" r="24" fill="#19a05b"/>
+   <path d="M133 170 l9 10 l19 -22" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+   <text x="182" y="163" font-size="14" font-weight="900" fill="#17324a">141,8 km</text>
+   <text x="182" y="182" font-size="11" font-weight="600" fill="#6e7f8f">geregistreerd</text>
+   <text x="115" y="238" font-size="11" font-weight="700" fill="#8fa3b5">RitSync · vandaag</text>
+ </g>
+ <g id="klaarBadge" class="badge">
+   <rect x="238" y="212" width="92" height="40" rx="12" fill="#ff8b00"/>
+   <text x="284" y="239" text-anchor="middle" font-size="17" font-weight="900" fill="#002F50">KLAAR</text>
+ </g>
+</g>
+
+<!-- ══════ EINDKAART ══════ -->
+<g id="end" class="scene">
+ <rect width="390" height="694" fill="#002F50"/>
+ <g id="endInner" class="pop">
+  <circle cx="195" cy="130" r="44" fill="#19a05b"/><circle cx="195" cy="130" r="16" fill="#002F50"/>
+  <text x="195" y="218" text-anchor="middle" font-size="38" font-weight="900" fill="#fff">Rit<tspan fill="#FF8B00">Sync</tspan></text>
+  <text x="195" y="292" text-anchor="middle" font-size="19.5" font-weight="800" fill="#fff">Je agenda kent je afspraken.</text>
+  <text x="195" y="320" text-anchor="middle" font-size="19.5" font-weight="800" fill="#8de8b7">RitSync maakt er je ritten van.</text>
+ </g>
+ <g id="ctaWrap" class="pop">
+  <!-- ═══════════════════════════════════════════════════════════
+       REGISTRATIELINK — hier wijzigen bij overgang naar productie.
+       Nu: acceptatieomgeving. Straks: https://ritsync.com/register
+       ═══════════════════════════════════════════════════════════ -->
+  <a id="cta" href="https://acceptance.ritsync.com/register" target="_blank" rel="noopener">
+    <rect x="52" y="386" width="286" height="66" rx="33" fill="#ff8b00"/>
+    <text x="195" y="427" text-anchor="middle" font-size="17" font-weight="900" fill="#002F50">Maak mijn account aan</text>
+  </a>
+  <text x="195" y="486" text-anchor="middle" font-size="13.5" font-weight="700" fill="#ffd7a5">De eerste maand is gratis — dat regelen wij.</text>
+  <text x="195" y="540" text-anchor="middle" font-size="13" fill="#bcd0dd">Je agenda rijdt, RitSync telt.</text>
+ </g>
+</g>
+</svg>
+<div class="startover" id="startOverlay">
+  <button id="startBtn" type="button">▶&nbsp;&nbsp;Speel af met geluid</button>
+  <span>1 minuut · met stem en muziek</span>
+</div>
+</div>
+<div class="controls"><button id="replay">Opnieuw</button><div class="track"><i id="prog"></i></div></div>
+<audio id="vo1" src="assets/shot1.mp3" preload="auto"></audio>
+<audio id="vo2" src="assets/shot2.mp3" preload="auto"></audio>
+<audio id="vo3" src="assets/shot3.mp3" preload="auto"></audio>
+<audio id="vo4" src="assets/shot4.mp3" preload="auto"></audio>
+<audio id="vo5" src="assets/shot5.mp3" preload="auto"></audio>
+<audio id="vo6" src="assets/shot6.mp3" preload="auto"></audio>
+<audio id="musicTrack" src="assets/road-trip-music-sonican.mp3" preload="auto"></audio>
+</div>
+<script>
+(()=>{
+ const q=s=>document.querySelector(s), qa=s=>[...document.querySelectorAll(s)];
+ const prog=q('#prog'), replay=q('#replay');
+ const reduced=matchMedia('(prefers-reduced-motion:reduce)').matches;
+ let raf=null,cursor=0,t0=0;
+
+ // ---- audio ----
+ const music=q('#musicTrack');
+ const vo=[q('#vo1'),q('#vo2'),q('#vo3'),q('#vo4'),q('#vo5'),q('#vo6')];
+ const overlay=q('#startOverlay'), startBtn=q('#startBtn');
+ let musicRaf=null, actx=null, gain=null, curVol=0;
+
+ function ensureAudioGraph(){
+   if(actx){actx.resume&&actx.resume();return}
+   const AC=window.AudioContext||window.webkitAudioContext;
+   if(!AC)return;
+   try{
+     actx=new AC();
+     const src=actx.createMediaElementSource(music);
+     gain=actx.createGain(); gain.gain.value=0;
+     src.connect(gain); gain.connect(actx.destination);
+     music.volume=1;
+   }catch(e){actx=null;gain=null}
+ }
+ function setVol(v){
+   curVol=Math.max(0,Math.min(1,v));
+   if(gain){gain.gain.value=curVol}else{music.volume=curVol}
+ }
+ function unlockAudio(){
+   [...vo,music].forEach(a=>{
+     try{const p=a.play();if(p&&p.catch)p.catch(()=>{});a.pause();a.currentTime=0;}catch(e){}
+   });
+ }
+ function musicTo(target,ms){
+   if(musicRaf)cancelAnimationFrame(musicRaf);
+   const from=curVol, st=performance.now();
+   (function step(now){
+     const p=Math.min((now-st)/ms,1);
+     setVol(from+(target-from)*p);
+     if(p<1) musicRaf=requestAnimationFrame(step);
+   })(st);
+ }
+
+ function show(sel){qa(sel).forEach(n=>n.classList.add('on'))}
+ function hide(sel){qa(sel).forEach(n=>n.classList.remove('on'))}
+ function nl(n,d){return n.toFixed(d).replace('.',',')}
+
+ // Auto rijdt een pad; het pad tekent zichzelf mee; de teller telt van kmA naar kmB.
+ function drive(pathSel,duration,kmA,kmB){
+   const path=q(pathSel), car=q('#car'), len=path.getTotalLength();
+   path.style.strokeDasharray=len; path.style.strokeDashoffset=len;
+   car.classList.add('on');
+   const st=performance.now();
+   (function step(now){
+      let p=Math.min((now-st)/duration,1); let e=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;
+      path.style.strokeDashoffset=len*(1-e);
+      let a=path.getPointAtLength(len*e), b=path.getPointAtLength(Math.min(len*e+2,len));
+      let ang=Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI;
+      car.setAttribute('transform',`translate(${a.x} ${a.y}) rotate(${ang})`);
+      q('#km').textContent=nl(kmA+(kmB-kmA)*e,1)+' km';
+      if(p<1) requestAnimationFrame(step);
+   })(st);
+ }
+
+ // Chip vliegt van agendaregel naar bestemming (dx,dy in px).
+ function fly(sel,dx,dy,scale,fade){
+   const el=q(sel);
+   el.style.transform=`translate(${dx}px,${dy}px) scale(${scale})`;
+   if(fade)el.style.opacity='0';
+ }
+
+ const cues=[
+  /* ── SHOT 1 · ochtend (stem: "Dit is Mark...") ── */
+  {t:0,on:'#s1,#mark1',run:()=>{vo[0].play();setVol(0);music.play();musicTo(.12,2500)}},
+  {t:1200,on:'#coffee1'},
+  {t:2200,on:'#phone1'},
+
+  /* ── SHOT 2 · agenda wordt rit (stem: "Kijk — elke afspraak...") ── */
+  {t:6500,off:'#s1',on:'#s2'},
+  {t:6900,on:'#pinT,#counterBox'},
+  {t:7000,run:()=>vo[1].play()},
+  {t:7400,run:()=>{fly('#chip1',-160,310,.3,true);q('#agRow1').classList.add('used')}},
+  {t:8100,on:'#pinR'},
+  {t:8400,on:'#agRit',run:()=>drive('#p1',reduced?500:3000,0,43.7)},
+  {t:12400,run:()=>{fly('#chip2',30,190,.3,true);q('#agRow2').classList.add('used')}},
+  {t:13100,on:'#pinA'},
+  {t:13400,run:()=>drive('#p2',reduced?500:3000,43.7,91.2)},
+  {t:17000,run:()=>musicTo(.25,1200)},
+
+  /* ── SHOT 3 · privé eruit (stem: "Zakelijk is zakelijk...") ── */
+  {t:20000,run:()=>musicTo(.12,800)},
+  {t:20300,run:()=>vo[2].play()},
+  {t:21000,run:()=>{fly('#chip3o',-30,140,.7,false);q('#agRow3').classList.add('used')}},
+  {t:22400,on:'#stampPrive'},
+  {t:23400,run:()=>q('#chip3o').classList.add('kicked')},
+  {t:25300,on:'#zakBadges'},
+
+  /* ── SHOT 4 · de dag rijgt zich (stem: "Tussenstop, klant, notaris...") ── */
+  {t:29300,run:()=>vo[3].play()},
+  {t:30000,run:()=>drive('#p3',reduced?700:7500,91.2,141.8)},
+  {t:30800,on:'#pinU'},
+  {t:38200,run:()=>q('#counterBox').classList.add('emph')},
+
+  /* ── SHOT 5 · avond, klaar (stem: "En 's avonds?...") ── */
+  {t:39500,off:'#s2',on:'#s5,#markAvond'},
+  {t:39800,run:()=>vo[4].play()},
+  {t:40800,run:()=>q('#lid').classList.add('closed')},
+  {t:43300,on:'#rapport'},
+  {t:45300,on:'#klaarBadge'},
+
+  /* ── SHOT 6 · eindkaart (stem: testeroproep) ── */
+  {t:49500,off:'#s5',on:'#end'},
+  {t:49700,on:'#endInner'},
+  {t:50000,run:()=>vo[5].play()},
+  {t:52500,on:'#ctaWrap'},
+
+  /* uitloop: stem klaar (±58 s), muziek even terug en uitfaden */
+  {t:58600,run:()=>musicTo(.25,1500)},
+  {t:61000,run:()=>musicTo(0,2500)}
+ ];
+ const DUR=63500;
+
+ function reset(){
+   qa('.scene,.pop,.rise,.badge').forEach(n=>n.classList.remove('on'));
+   qa('.chip').forEach(c=>{c.classList.remove('kicked');c.style.transform='';c.style.opacity=''});
+   qa('.agrow').forEach(r=>r.classList.remove('used'));
+   q('#car').classList.remove('on');q('#car').removeAttribute('transform');
+   q('#lid').classList.remove('closed');
+   q('#counterBox').classList.remove('emph');
+   ['#p1','#p2','#p3'].forEach(s=>{const p=q(s);const len=p.getTotalLength();p.style.strokeDasharray=len;p.style.strokeDashoffset=len});
+   q('#km').textContent='0,0 km';
+   prog.style.width='0';cursor=0;
+   if(musicRaf)cancelAnimationFrame(musicRaf);
+   [...vo,music].forEach(a=>{a.pause();a.currentTime=0});
+   setVol(0);
+ }
+ function apply(c){if(c.off)hide(c.off);if(c.on)show(c.on);if(c.run)c.run()}
+ function tick(now){
+   const elapsed=now-t0;
+   while(cursor<cues.length && cues[cursor].t<=elapsed) apply(cues[cursor++]);
+   prog.style.width=Math.min(elapsed/DUR*100,100)+'%';
+   if(elapsed<DUR) raf=requestAnimationFrame(tick);
+ }
+ function play(){if(raf)cancelAnimationFrame(raf);reset();t0=performance.now();raf=requestAnimationFrame(tick)}
+ startBtn.addEventListener('click',()=>{
+   ensureAudioGraph(); unlockAudio();
+   overlay.classList.add('hidden'); play();
+ });
+ replay.addEventListener('click',()=>{
+   ensureAudioGraph(); unlockAudio(); play();
+ });
+})();
+</script>
+</body>
+</html>
