@@ -689,11 +689,11 @@ l20 -37 -20 -44 c-27 -56 -61 -132 -72 -160 -43 -111 -118 -173 -232 -191 -55
        REGISTRATIELINK — hier wijzigen bij overgang naar productie.
        Nu: acceptatieomgeving. Straks: https://ritsync.com/register
        ═══════════════════════════════════════════════════════════ -->
-  <a id="cta" href="https://acceptance.ritsync.com/register" target="_blank" rel="noopener">
+  <a id="cta" href="https://app.ritsync.com/register" target="_blank" rel="noopener">
     <rect x="52" y="386" width="286" height="66" rx="33" fill="#ff8b00"/>
     <text x="195" y="427" text-anchor="middle" font-size="17" font-weight="900" fill="#002F50">Maak mijn account aan</text>
   </a>
-  <text x="195" y="486" text-anchor="middle" font-size="13.5" font-weight="700" fill="#ffd7a5">De eerste maand is gratis — dat regelen wij.</text>
+  <text x="195" y="486" text-anchor="middle" font-size="13.5" font-weight="700" fill="#ffd7a5">De eerste twee maanden zijn gratis — dat regelen wij.</text>
   <text x="195" y="540" text-anchor="middle" font-size="13" fill="#bcd0dd">Je agenda rijdt, RitSync telt.</text>
  </g>
 </g>
@@ -817,21 +817,21 @@ l20 -37 -20 -44 c-27 -56 -61 -132 -72 -160 -43 -111 -118 -173 -232 -191 -55
   {t:38200,run:()=>q('#counterBox').classList.add('emph')},
 
   /* ── SHOT 5 · avond, klaar (stem: "En 's avonds?...") ── */
-  {t:39500,off:'#s2',on:'#s5,#markAvond'},
-  {t:39800,run:()=>vo[4].play()},
-  {t:40800,run:()=>q('#lid').classList.add('closed')},
-  {t:43300,on:'#rapport'},
-  {t:45300,on:'#klaarBadge'},
+  {t:43000,off:'#s2',on:'#s5,#markAvond'},
+  {t:43300,run:()=>vo[4].play()},
+  {t:44300,run:()=>q('#lid').classList.add('closed')},
+  {t:46800,on:'#rapport'},
+  {t:48800,on:'#klaarBadge'},
 
   /* ── SHOT 6 · eindkaart (stem: testeroproep) ── */
-  {t:49500,off:'#s5',on:'#end'},
-  {t:49700,on:'#endInner'},
-  {t:50000,run:()=>vo[5].play()},
-  {t:52500,on:'#ctaWrap'},
+  {t:53000,off:'#s5',on:'#end'},
+  {t:53200,on:'#endInner'},
+  {t:53500,run:()=>vo[5].play()},
+  {t:56000,on:'#ctaWrap'},
 
   /* uitloop: stem klaar (±58 s), muziek even terug en uitfaden */
-  {t:58600,run:()=>musicTo(.25,1500)},
-  {t:61000,run:()=>musicTo(0,2500)}
+  {t:62100,run:()=>musicTo(.25,1500)},
+  {t:64500,run:()=>musicTo(0,2500)}
  ];
  const DUR=63500;
 
